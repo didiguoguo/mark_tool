@@ -1,0 +1,33 @@
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="./styles.css" />
+    <link href="https://cdn.bootcss.com/bootstrap/4.1.1/css/bootstrap.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/bootstrap/4.1.1/js/bootstrap.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.js"></script>
+</head>
+
+<body style="margin:0">
+    <div class="work_area">
+        <canvas id='canvas'>您的版本浏览器版本过低，不支持canvas绘图，请升级您的浏览器！</canvas>
+    </div>
+    <div class="tools">
+        <button class="btn btn-sm" onclick="reset()">重置</button>
+        <button class="btn btn-sm" onclick="toggleToCircle()">圆圈</button>
+        <button class="btn btn-sm" onclick="toggleToRect()">矩形</button>
+        <button class="btn btn-sm" onclick="toggleToBrokenLine()">折线</button>
+        <button class="btn btn-sm" onclick="enlarge()">+</button>
+        <button class="btn btn-sm" onclick="narrow()">-</button>
+        <select onchange="onColorChange(this.value)">
+            <option value="#000">黑色</option>
+            <option value="#fff">白色</option>
+            <option value="#00f">蓝色</option>
+            <option value="#f00">红色</option>
+            <option value="#0f0">黄色</option>
+        </select>
+    </div>
+    <script src="./lodash.js"></script>
+    <script src="./myeditor.js"></script>
+</body>
+
+</html>
