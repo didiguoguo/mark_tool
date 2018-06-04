@@ -1,38 +1,55 @@
 let canvas = document.getElementById('canvas')
 let ctx = canvas.getContext('2d')
 
-let img = new Image()
-img.src = './images/pic.png'
-img.onload = function () {
-    let w = this.width
-    let h = this.height
-    let W = window.innerWidth
-    let H = window.innerHeight
-    canvas.height = h
-    if (w > W) {
-        canvas.width = W
-    } else {
-        canvas.width = w
-    }
-    ctx.drawImage(img, 0, 0)
-}
-
-let paintType = 0 // 图形格式：0代表矩形 1代表圆形 2代表折线
+let paintType = 0 // 图形格式：0代表操作图形 1代表矩形 2代表圆形 3代表折线 4代表放大 5代表缩小
 let startPoint = {
     x: 0,
     y: 0
 }
+
+let canvasWidth = 0 //canvas宽度
+let canvasHeight = 0 //canvas高度
+
+let imgWidth = 0 //img宽度
+let imgHeight = 0 //img高度
+
 let currentShapeId = -1;
 let isPainting = false //绘图状态
-let isDraggable = false //拖动状态
-let shapes = [] //存放图形数据的数据
+let shapes = [] //图形数据
 let scaleSize = 1 //当前缩放比例
 let currentStrokeStyle = '#000' //当前描边色
-
+let dashLine = false //是否虚线
 let temporaryData = [] //临时数据数组
+
+let img = new Image()
+img.src = './wlop1.jpg'
+img.onload = function () {
+    let w = this.width
+    let h = this.height
+    imgWidth = this.width
+    imgHeight = this.height
+    let W = window.innerWidth
+    let H = window.innerHeight
+    if (w > W) {
+        canvas.width = W
+        canvasWidth = W
+    } else {
+        canvas.width = w
+        canvasWidth = W
+    }
+    if (h > H - 100) {
+        canvas.height = H - 100
+        canvasHeight = H - 100
+    } else {
+        canvas.height = h
+        canvasHeight = H - 100
+    }
+    ctx.drawImage(img, 0, 0)
+}
 
 //清除所有操作
 function reset() {
+    canvas.style.cursor = 'auto'
     currentShapeId = -1;
     paintType = 0
     startPoint = {
@@ -40,58 +57,96 @@ function reset() {
         y: 0
     }
     isPainting = false
-    isDraggable = false
     shapes = []
     scaleSize = 1
     currentStrokeStyle = '#000'
     temporaryData = []
+    dashLine = false
     drawShapes()
+}
+
+//切换为操作模式
+function toggleToAction() {
+    paintType = 0
+    canvas.style.cursor = 'pointer'
 }
 
 //切换矩形
 function toggleToRect() {
-    paintType = 0
+    paintType = 1
+    canvas.style.cursor = 'crosshair'
 }
 
 //切换圆形
 function toggleToCircle() {
-    paintType = 1
+    paintType = 2
+    canvas.style.cursor = 'crosshair'
 }
 
 //切换折线
 function toggleToBrokenLine() {
-    paintType = 2
+    paintType = 3
+    canvas.style.cursor = 'crosshair'
 }
 
+//切换虚线
+function toggleToDashLine(v) {
+    if (v == 0)
+        dashLine = false
+    if (v == 1)
+        dashLine = true
+}
+
+//切换颜色
 function onColorChange(v) {
     console.log(v)
     currentStrokeStyle = v
 }
 
+//切换为放大模式
+function toggleToZoomIn() {
+    paintType = 4
+    canvas.style.cursor = 'zoom-in'
+}
+
+//切换为放大模式
+function toggleToZoomOut() {
+    paintType = 5
+    canvas.style.cursor = 'zoom-out'
+}
+
+//放大
 function enlarge() {
     scaleSize = scaleSize * 1.2
-    ctx.scale(scaleSize, scaleSize)
-    ctx.clearRect(0, 0, 1200, 800)
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight)
     ctx.drawImage(img, 0, 0)
-    ctx.setLineDash([5, 15]);
     ctx.beginPath()
     drawShapes()
 }
 
+//缩小
 function narrow() {
-    if (scaleSize <= 1) {
-        return
-    } else {
+    if (scaleSize < 1.2 && scaleSize > 1) {
+        ctx.scale(1 / scaleSize, 1 / scaleSize)
+        scaleSize = 1
+    } else if (scaleSize >= 1.2) {
         scaleSize = scaleSize / 1.2
         ctx.scale(1 / 1.2, 1 / 1.2)
-        ctx.clearRect(0, 0, 1000, 800)
-        ctx.drawImage(img, 0, 0)
-        ctx.beginPath()
-        drawShapes()
     }
+    console.log(scaleSize)
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+    ctx.drawImage(img, 0, 0)
+    ctx.beginPath()
+    drawShapes()
 }
 
-function drawRect(x, y, w, h, c) {
+//绘制矩形
+function drawRect(x, y, w, h, c, d) {
+    if (d) {
+        ctx.setLineDash([5, 5])
+    } else {
+        ctx.setLineDash([1, 0])
+    }
     ctx.beginPath()
     ctx.strokeStyle = c
     ctx.moveTo(x, y)
@@ -105,7 +160,13 @@ function drawRect(x, y, w, h, c) {
     ctx.stroke()
 }
 
-function drawCircle(x, y, r, c) {
+//绘制圆形
+function drawCircle(x, y, r, c, d) {
+    if (d) {
+        ctx.setLineDash([5, 5])
+    } else {
+        ctx.setLineDash([1, 0])
+    }
     ctx.beginPath()
     ctx.strokeStyle = c
     ctx.moveTo(x + r, y)
@@ -113,6 +174,7 @@ function drawCircle(x, y, r, c) {
     ctx.stroke()
 }
 
+//绘制线段
 function drawLine(startPoint, endPoint, color) {
     ctx.beginPath()
     ctx.strokeStyle = color
@@ -121,6 +183,7 @@ function drawLine(startPoint, endPoint, color) {
     ctx.stroke()
 }
 
+//绘制折线
 function drawBrokenLine(points, color) {
     points.forEach((point, index) => {
         drawCircle(point.x, point.y, 3, color)
@@ -130,38 +193,45 @@ function drawBrokenLine(points, color) {
     })
 }
 
+//绘制所有图形
 function drawShapes() {
-    console.log(shapes, paintType)
+    // console.log(shapes, paintType)
     if (shapes.length > 0) {
-        shapes.forEach(function (item, index) {
-            if (item.paintType === 0) {
-                drawRect(item.x, item.y, item.w, item.h, item.color)
-            }
-            if (item.paintType === 1) {
-                drawCircle(item.x, item.y, item.r, item.color)
-            }
-            if (item.paintType === 2) {
-                drawBrokenLine(item.points, item.color)
-            }
-        })
+        shapes
+            .forEach(function (item, index) {
+                if (item.paintType === 1) {
+                    drawRect(item.x, item.y, item.w, item.h, item.color, item.dashLine)
+                }
+                if (item.paintType === 2) {
+                    drawCircle(item.x, item.y, item.r, item.color, item.dashLine)
+                }
+                if (item.paintType === 3) {
+                    drawBrokenLine(item.points, item.color)
+                }
+            })
     } else {
-        ctx.clearRect(0, 0, 1000, 800)
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight)
         ctx.drawImage(img, 0, 0)
     }
 }
 
+//鼠标按下事件
 $(canvas).on('mousedown', function (e) {
+    let x = e.offsetX
+    let y = e.offsetY
     let len = shapes.length;
-    startPoint.x = e.offsetX
-    startPoint.y = e.offsetY
+    startPoint = {
+        x,
+        y
+    }
     isPainting = true
-    if (paintType === 2) { //绘制折线图
+    if (paintType === 3) { //绘制折线图
         if (len === 0) {
             shapes.push({
                 id: len,
                 points: [{
-                    x: startPoint.x,
-                    y: startPoint.y
+                    x,
+                    y
                 }],
                 paintType,
                 color: currentStrokeStyle
@@ -169,42 +239,62 @@ $(canvas).on('mousedown', function (e) {
         } else {
             let existed = false;
             shapes.forEach((item, index) => {
-                if (item.paintType === 2 && index === shapes.length - 1) {
+                if (item.paintType === 3 && index === shapes.length - 1) {
                     existed = true
-                    shapes[index].points.push({
-                        x: startPoint.x,
-                        y: startPoint.y
-                    })
-                    // if (shapes[index].points.length > 2 && shapes[index].points[0].x === startPoint.x && shapes[index].points[0].y === startPoint.y) {
-                    //     ctx.clearRect(0, 0, 1000, 800)
-                    //     ctx.drawImage(img, 0, 0)
-                    //     ctx.beginPath()
-                    //     drawShapes()
-                    //     isPainting = false
-                    // }
+                    shapes[index]
+                        .points
+                        .push({
+                            x,
+                            y
+                        })
+                    // if (shapes[index].points.length > 2 && shapes[index].points[0].x ===
+                    // startPoint.x && shapes[index].points[0].y === startPoint.y) {
+                    // ctx.clearRect(0, 0, canvasWidth, canvasHeight)     ctx.drawImage(img, 0, 0) ctx.beginPath()
+                    // drawShapes()     isPainting = false }
                 }
             })
             if (!existed) {
                 shapes.push({
                     id: len,
                     points: [{
-                        x: startPoint.x,
-                        y: startPoint.y
+                        x,
+                        y
                     }],
                     paintType,
                     color: currentStrokeStyle
                 })
             }
         }
-        ctx.clearRect(0, 0, 1000, 800)
-        ctx.drawImage(img, 0, 0)
-        ctx.beginPath()
-        drawShapes()
+    } else if (paintType === 1) {
+        shapes.push({
+            x,
+            y,
+            w: 0,
+            h: 0,
+            color: currentStrokeStyle,
+            dashLine
+        })
+    } else if (paintType === 2) {
+        shapes.push({
+            x,
+            y,
+            r: 0,
+            color: currentStrokeStyle,
+            dashLine
+        })
     }
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+    ctx.drawImage(img, 0, 0)
+    ctx.beginPath()
+    drawShapes()
 })
 
+//鼠标移动事件
 $(canvas).on('mousemove', function (e) {
-    let width, height, x, y
+    let width,
+        height,
+        x,
+        y
     if (e.offsetX > startPoint.x) {
         x = startPoint.x
         width = e.offsetX - startPoint.x
@@ -221,74 +311,49 @@ $(canvas).on('mousemove', function (e) {
     }
     let radius = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2))
     if (isPainting) {
-        if (paintType === 2) {
-            // shapes.forEach((item, index) => {
-            //     if (item.id === currentShapeId) {
-            //         let len = shapes[index].points.length
-            //         shapes[index].points[len - 1] = {
-            //             x: startPoint.x,
-            //             y: startPoint.y,
-            //         }
-            //     }
-            // })
+        if (paintType === 3) {
+            // shapes.forEach((item, index) => {     if (item.id === currentShapeId) {   let
+            // len = shapes[index].points.length         shapes[index].points[len - 1] = {
+            // x: startPoint.x,             y: startPoint.y,         }     } })
         } else {
-            if (paintType === 0) {
-                if (shapes.length === 0) {
-                    shapes.push({
-                        id: shapes.length,
-                        x: x,
-                        y: y,
-                        w: width,
-                        h: height,
-                        paintType,
-                        color: currentStrokeStyle
-                    })
-                } else {
-                    shapes[shapes.length - 1] = {
-                        ...shapes[shapes.length - 1],
-                        x: x,
-                        y: y,
-                        w: width,
-                        h: height,
-                        paintType,
-                        color: currentStrokeStyle
-                    }
-                }
-            }
             if (paintType === 1) {
-                if (shapes.length === 0) {
-                    shapes.push({
-                        id: shapes.length,
-                        x: startPoint.x,
-                        y: startPoint.y,
-                        r: radius,
-                        paintType,
-                        color: currentStrokeStyle
-                    })
-                } else {
-                    shapes[shapes.length - 1] = {
-                        ...shapes[shapes.length - 1],
-                        x: startPoint.x,
-                        y: startPoint.y,
-                        r: radius,
-                        paintType,
-                        color: currentStrokeStyle
-                    }
+                shapes[shapes.length - 1] = {
+                    ...shapes[shapes.length - 1],
+                    x: x,
+                    y: y,
+                    w: width,
+                    h: height,
+                    paintType,
+                    color: currentStrokeStyle
                 }
             }
-            ctx.clearRect(0, 0, 1000, 800)
-            ctx.drawImage(img, 0, 0)
-            ctx.beginPath()
-            drawShapes()
+            if (paintType === 2) {
+                shapes[shapes.length - 1] = {
+                    ...shapes[shapes.length - 1],
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    r: radius,
+                    paintType,
+                    color: currentStrokeStyle
+                }
+            }
         }
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+        ctx.drawImage(img, 0, 0)
+        ctx.beginPath()
+        drawShapes()
     }
 })
+
+//鼠标弹起事件
 $(canvas).on('mouseup', function (e) {
-    if (paintType !== 2) {
+    if (paintType !== 3) {
         isPainting = false
         temporaryData = []
     }
 })
+
+//鼠标离开区域事件
 $(canvas).on('mouseout', function (e) {
     // console.log(e.offsetX,e.offsetY)
     isPainting = false

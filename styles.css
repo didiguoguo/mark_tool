@@ -8,9 +8,14 @@
     margin: 0 auto;
     text-align: center;
     line-height: 2em;
+    padding:5px 0;
 }
 
-#canvas{
+button {
+    vertical-align: bottom!important;
+}
+
+#canvas {
     background: #ddd;
     margin: 0 auto;
 }
@@ -23,4 +28,31 @@
 
 .tools>select {
     flex: 1;
+}
+
+.btn-text {
+    font-size: 16px;
+}
+
+select,
+option {
+    font-size: 16px;
+    height: 34px;
+    line-height: 34px;
+}
+
+@font-face {
+    font-family: 'iconfont';
+    /* project id 644606 */
+    src: url('./font_644606_sxp3t01s7t2fn7b9/iconfont.eot');
+    src: url('./font_644606_sxp3t01s7t2fn7b9/iconfont.eot?#iefix') format('embedded-opentype'), url('./font_644606_sxp3t01s7t2fn7b9/iconfont.woff') format('woff'), url('./font_644606_sxp3t01s7t2fn7b9/iconfont.ttf') format('truetype'), url('./font_644606_sxp3t01s7t2fn7b9/iconfont.svg#iconfont') format('svg');
+}
+
+.iconfont {
+    font-family: "iconfont" !important;
+    font-size: 16px;
+    font-style: normal;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-stroke-width: 0.2px;
+    -moz-osx-font-smoothing: grayscale;
 }
