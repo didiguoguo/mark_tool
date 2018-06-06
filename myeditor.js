@@ -19,12 +19,15 @@ let imgHeight = 0 //img高度
 
 let currentShapeId = -1;
 let isPainting = false //绘图状态
+let isDragging = false //拖动状态
 let shapes = [] //图形数据
 let scaleSize = 1 //当前缩放比例
 let currentStrokeStyle = '#000' //当前描边色
 let dashLine = false //是否虚线
 let sourceX = 0 //canvas 绘制图像时取原图像像素点位置的X坐标
 let sourceY = 0 //canvas 绘制图像时取原图像像素点位置的Y坐标
+
+let temporaryData = [] //拖拽临时数据
 
 let img = new Image()
 img.src = './分析选项.png'
@@ -334,25 +337,16 @@ $(canvas).on('mousedown', function (e) {
         x,
         y
     }
-    isPainting = true
-    if (paintType === 3) { //绘制折线图
-        if (len === 0) {
-            shapes.push({
-                id: len,
-                points: [{
-                    x: sourceX + x / scaleSize,
-                    y: sourceY + y / scaleSize,
-                }],
-                paintType,
-                color: currentStrokeStyle
-            })
-        } else {
-            if (shapes[shapes.length - 1].paintType === 3) {
-                shapes[shapes.length - 1].points.push({
-                    x: sourceX + x / scaleSize,
-                    y: sourceY + y / scaleSize,
-                })
-            } else {
+    if (paintType === 0) {
+        isDragging = true
+        temporaryData.push({
+            x,
+            y
+        })
+    } else {
+        isPainting = true
+        if (paintType === 3) { //绘制折线图
+            if (len === 0) {
                 shapes.push({
                     id: len,
                     points: [{
@@ -362,25 +356,42 @@ $(canvas).on('mousedown', function (e) {
                     paintType,
                     color: currentStrokeStyle
                 })
+            } else {
+                if (shapes[shapes.length - 1].paintType === 3) {
+                    shapes[shapes.length - 1].points.push({
+                        x: sourceX + x / scaleSize,
+                        y: sourceY + y / scaleSize,
+                    })
+                } else {
+                    shapes.push({
+                        id: len,
+                        points: [{
+                            x: sourceX + x / scaleSize,
+                            y: sourceY + y / scaleSize,
+                        }],
+                        paintType,
+                        color: currentStrokeStyle
+                    })
+                }
             }
+        } else if (paintType === 1) {
+            shapes.push({
+                x,
+                y,
+                w: 0,
+                h: 0,
+                color: currentStrokeStyle,
+                dashLine,
+            })
+        } else if (paintType === 2) {
+            shapes.push({
+                x,
+                y,
+                r: 0,
+                color: currentStrokeStyle,
+                dashLine,
+            })
         }
-    } else if (paintType === 1) {
-        shapes.push({
-            x,
-            y,
-            w: 0,
-            h: 0,
-            color: currentStrokeStyle,
-            dashLine,
-        })
-    } else if (paintType === 2) {
-        shapes.push({
-            x,
-            y,
-            r: 0,
-            color: currentStrokeStyle,
-            dashLine,
-        })
     }
     draw()
 })
@@ -436,12 +447,41 @@ $(canvas).on('mousemove', function (e) {
         }
         draw()
     }
+    if (isDragging && paintType === 0) {
+        // console.log('scaleSize:', scaleSize, 'start:', startPoint, 'current:', {
+        //     x: e.offsetX,
+        //     y: e.offsetY
+        // })
+        sourceX = sourceX - (e.offsetX - temporaryData[temporaryData.length - 1].x) / scaleSize
+        sourceY = sourceY - (e.offsetY - temporaryData[temporaryData.length - 1].y) / scaleSize
+
+        if (sourceX < 0) {
+            sourceX = 0
+        }
+        if (sourceY < 0) {
+            sourceY = 0
+        }
+        if (sourceX > imgWidth - canvasWidth / scaleSize) {
+            sourceX = imgWidth - canvasWidth / scaleSize
+        }
+        if (sourceY > imgHeight - canvasHeight / scaleSize) {
+            sourceY = imgHeight - canvasHeight / scaleSize
+        }
+        // console.log('sourceX:', sourceX, 'sourceY:', sourceY)
+        draw()
+        temporaryData.push({
+            x: e.offsetX,
+            y: e.offsetY
+        })
+    }
 })
 
 //鼠标弹起事件
 $(canvas).on('mouseup', function (e) {
     if (paintType !== 3) {
         isPainting = false
+        isDragging = false
+        temporaryData = []
     }
 })
 
@@ -449,6 +489,8 @@ $(canvas).on('mouseup', function (e) {
 $(canvas).on('mouseout', function (e) {
     // console.log(e.offsetX,e.offsetY)
     isPainting = false
+    isDragging = false
+    temporaryData = []
 })
 
 $(document).on('keydown', function (e) {
