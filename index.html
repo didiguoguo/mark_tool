@@ -1,0 +1,45 @@
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="./styles.css" />
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.js"></script>
+    <link href="https://cdn.bootcss.com/bootstrap/4.1.1/css/bootstrap.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/bootstrap/4.1.1/js/bootstrap.js"></script>
+</head>
+
+<body style="margin:0">
+    <div class="work_area">
+        <canvas id='canvas'>您的版本浏览器版本过低，不支持canvas绘图，请升级您的浏览器！</canvas>
+    </div>
+    <div class="tools">
+        <button class="btn btn-sm btn-danger" onclick="reset()"><span class="btn-text">重置</span></button>
+        <button class="btn btn-sm" onclick="toggleToAction()"><span class="btn-text">操作</span></button>
+        <select onchange="onColorChange(this.value)">
+            <option value="#000">黑色</option>
+            <option value="#fff">白色</option>
+            <option value="#00f">蓝色</option>
+            <option value="#f00">红色</option>
+            <option value="#0f0">黄色</option>
+        </select>
+        <select onchange="toggleToDashLine(this.value)">
+            <option value="0">实线</option>
+            <option value="1">虚线</option>
+        </select>
+        <button class="btn btn-sm" onclick="toggleToRect()"><span class="btn-text">矩形</span></button>
+        <button class="btn btn-sm" onclick="toggleToCircle()"><span class="btn-text">圆圈</span></button>
+        <button class="btn btn-sm" onclick="toggleToBrokenLine()"><span class="btn-text">折线</span></button>
+        <button class="btn btn-sm" onclick="toggleToPoint()"><span class="btn-text">点</span></button>
+        <button class="btn btn-sm" onclick="enlarge()"><i class="iconfont">&#xe6db;</i></button>
+        <button class="btn btn-sm" onclick="narrow()"><i class="iconfont">&#xe6c7;</i></button>
+
+        <button class="btn btn-sm" onclick="moveLeft()"><i class="iconfont">&#xe639;</i></button>
+        <button class="btn btn-sm" onclick="moveRight()"><i class="iconfont">&#xe63a;</i></button>
+        <button class="btn btn-sm" onclick="moveUp()"><i class="iconfont">&#xe63c;</i></button>
+        <button class="btn btn-sm" onclick="moveDown()"><i class="iconfont">&#xe638;</i></button>
+        
+    </div>
+    <script src="./lodash.js"></script>
+    <script src="./myeditor.js"></script>
+</body>
+
+</html>
