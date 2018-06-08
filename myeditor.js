@@ -4,7 +4,7 @@ let ctx = canvas.getContext('2d')
 const scrollSpeed = 50 //滚动速度
 const containerWidth = window.innerWidth //容器宽度
 const containerHeight = window.innerHeight - 100 //容器高度
-
+const selectedStyle = 'gray'
 let paintType = 0 // 图形格式：0代表操作模式 1代表矩形 2代表圆形 3代表多边形 4代表点 
 let startPoint = {
     x: 0,
@@ -25,7 +25,6 @@ let selectedShape = null //被选中形状
 let shapes = [] //图形数据
 let scaleSize = 1 //当前缩放比例
 let currentStrokeStyle = '#000' //当前描边色
-let dashLine = false //是否虚线
 let sourceX = 0 //canvas 绘制图像时取原图像像素点位置的X坐标
 let sourceY = 0 //canvas 绘制图像时取原图像像素点位置的Y坐标
 
@@ -82,25 +81,35 @@ function checkCurrentPoint(points, cPoint) {
             r,
             u,
             d,
+            ur,
+            ul,
+            dr,
+            dl,
             aroundBorder,
         } = checkInShapeBorderResult
-        if (l && u) {
+        if (ul) {
             canvas.style.cursor = 'nw-resize'
         }
-        if (l && d) {
+        if (dl) {
             canvas.style.cursor = 'ne-resize'
         }
-        if (r && u) {
+        if (ur) {
             canvas.style.cursor = 'nesw-resize'
         }
-        if (r && d) {
+        if (dr) {
             canvas.style.cursor = 'nwse-resize'
         }
-        if ((l || r) && !u && !d) {
+        if (l) {
+            canvas.style.cursor = 'w-resize'
+        }
+        if (r) {
             canvas.style.cursor = 'e-resize'
         }
-        if ((u || d) && !l && !r) {
+        if (u) {
             canvas.style.cursor = 'n-resize'
+        }
+        if (d) {
+            canvas.style.cursor = 's-resize'
         }
         if (aroundBorder) {
             canvas.style.cursor = 'all-scroll'
@@ -173,25 +182,46 @@ function checkInShapeBorder(shape, point) {
         let r = false
         let u = false
         let d = false
+        let ul = false
+        let ur = false
+        let dr = false
+        let dl = false
         if (-10 / scaleSize < x2 - x1 && x2 - x1 <= 10 / scaleSize) {
-            l = true
+            if (-10 / scaleSize < y2 - y1 && y2 - y1 <= 10 / scaleSize) {
+                ul = true
+            } else if (-10 / scaleSize < y2 - y1 - h && y2 - y1 - h <= 10 / scaleSize) {
+                dl = true
+            } else if (10 / scaleSize < y2 - y1 && y2 - y1 < -10 / scaleSize + h) {
+                l = true
+            }
+        } else if (-10 / scaleSize < x2 - x1 - w && x2 - x1 - w <= 10 / scaleSize) {
+            if (-10 / scaleSize < y2 - y1 && y2 - y1 <= 10 / scaleSize) {
+                ur = true
+            } else if (-10 / scaleSize < y2 - y1 - h && y2 - y1 - h <= 10 / scaleSize) {
+                dr = true
+            } else if (10 / scaleSize < y2 - y1 && y2 - y1 < -10 / scaleSize + h) {
+                r = true
+            }
+        } else if (-10 / scaleSize < y2 - y1 && y2 - y1 <= 10 / scaleSize) {
+            if (10 / scaleSize < x2 - x1 && x2 - x1 < -10 / scaleSize + w) {
+                u = true
+            }
+        } else if (-10 / scaleSize < y2 - y1 - h && y2 - y1 - h <= 10 / scaleSize) {
+            if (10 / scaleSize < x2 - x1 && x2 - x1 < -10 / scaleSize + w) {
+                d = true
+            }
         }
-        if (-10 / scaleSize < x2 - x1 - w && x2 - x1 - w <= 10 / scaleSize) {
-            r = true
-        }
-        if (-10 / scaleSize < y2 - y1 && y2 - y1 <= 10 / scaleSize) {
-            u = true
-        }
-        if (-10 / scaleSize < y2 - y1 - h && y2 - y1 - h <= 10 / scaleSize) {
-            d = true
-        }
-        if (l || r || u || d) {
+        if (l || r || u || d || ur || ul || dr || dl) {
             return {
                 shapeId: shape.id,
                 u,
                 l,
                 d,
                 r,
+                ur,
+                ul,
+                dr,
+                dl,
                 paintType: shape.paintType,
             }
         } else {
@@ -232,7 +262,6 @@ function reset() {
     scaleSize = 1
     selectedShape = null
     currentStrokeStyle = '#000'
-    dashLine = false
     sourceX = 0
     sourceY = 0
     drawShapes()
@@ -276,17 +305,17 @@ function toggleToPoint() {
     canvas.style.cursor = 'crosshair'
 }
 
-//切换虚线
-function toggleToDashLine(v) {
-    isPainting = false
-    shapes = filterUncompletedPolygon(shapes)
-    if (v == 0) {
-        dashLine = false
-    }
-    if (v == 1) {
-        dashLine = true
-    }
-}
+// //切换虚线
+// function toggleToDashLine(v) {
+//     isPainting = false
+//     shapes = filterUncompletedPolygon(shapes)
+//     if (v == 0) {
+//         dashLine = false
+//     }
+//     if (v == 1) {
+//         dashLine = true
+//     }
+// }
 
 //切换颜色
 function onColorChange(v) {
@@ -381,17 +410,16 @@ function moveDown() {
 }
 
 //绘制矩形
-function drawRect({
-    x,
-    y,
-    w,
-    h,
-    color,
-    dashLine
-}) {
-    let c = color
-    let d = dashLine
-    if (d) {
+function drawRect(rect) {
+    let {
+        x,
+        y,
+        w,
+        h,
+        color,
+        selected,
+    } = rect
+    if (selected) {
         ctx.setLineDash([5, 5])
     } else {
         ctx.setLineDash([1, 0])
@@ -401,30 +429,20 @@ function drawRect({
     w = w * scaleSize
     h = h * scaleSize
     ctx.beginPath()
-    ctx.strokeStyle = c
-    // ctx.moveTo(x, y)
-    // ctx.lineTo(x + w, y)
-    // ctx.moveTo(x + w, y)
-    // ctx.lineTo(x + w, y + h)
-    // ctx.moveTo(x + w, y + h)
-    // ctx.lineTo(x, y + h)
-    // ctx.moveTo(x, y + h)
-    // ctx.lineTo(x, y)
-    // ctx.stroke()
+    ctx.strokeStyle = selected ? selectedStyle : color
     ctx.strokeRect(x, y, w, h)
 }
 
 //绘制圆形
-function drawCircle({
-    x,
-    y,
-    r,
-    color,
-    dashLine
-}) {
-    let c = color
-    let d = dashLine
-    if (d) {
+function drawCircle(circle) {
+    let {
+        x,
+        y,
+        r,
+        color,
+        selected
+    } = circle
+    if (selected) {
         ctx.setLineDash([5, 5])
     } else {
         ctx.setLineDash([1, 0])
@@ -433,14 +451,14 @@ function drawCircle({
     y = (y - sourceY) * scaleSize
     r = r * scaleSize
     ctx.beginPath()
-    ctx.strokeStyle = c
+    ctx.strokeStyle = selected ? selectedStyle : color
     ctx.moveTo(x + r, y)
     ctx.arc(x, y, r, 0, Math.PI * 2)
     ctx.stroke()
 }
 
 //绘制线段
-function drawLine(sPoint, ePoint, color) {
+function drawLine(sPoint, ePoint, color, selected) {
     sPoint = {
         ...sPoint,
         x: (sPoint.x - sourceX) * scaleSize,
@@ -451,34 +469,45 @@ function drawLine(sPoint, ePoint, color) {
         x: (ePoint.x - sourceX) * scaleSize,
         y: (ePoint.y - sourceY) * scaleSize,
     }
+    if (selected) {
+        ctx.setLineDash([5, 5])
+    } else {
+        ctx.setLineDash([1, 0])
+    }
     ctx.beginPath()
-    ctx.strokeStyle = color
+    ctx.strokeStyle = selected ? selectedStyle : color
     ctx.moveTo(sPoint.x, sPoint.y)
     ctx.lineTo(ePoint.x, ePoint.y)
     ctx.stroke()
 }
 
 //绘制多边形
-function drawBrokenLine({
-    points,
-    color,
-    isCompleted
-}) {
+function drawBrokenLine(polygon) {
+    let {
+        points,
+        color,
+        isCompleted,
+        selected,
+        r
+    } = polygon
     points.forEach((point, index) => {
-        const x = (point.x - sourceX) * scaleSize
-        const y = (point.y - sourceY) * scaleSize
-        const radius = 3
-        ctx.beginPath()
-        ctx.strokeStyle = color
-        ctx.moveTo(x + radius, y)
-        ctx.arc(x, y, radius, 0, Math.PI * 2)
-        ctx.stroke()
+        const {
+            x,
+            y
+        } = point
+        drawCircle({
+            x,
+            y,
+            r,
+            selected,
+            color
+        })
         if (index > 0 && index < points.length) {
-            drawLine(points[index - 1], point, color)
+            drawLine(points[index - 1], point, color, selected)
         }
     })
     if (isCompleted) {
-        drawLine(points[points.length - 1], points[0], color)
+        drawLine(points[points.length - 1], points[0], color, selected)
     }
 }
 
@@ -507,7 +536,10 @@ function drawShapes() {
                 drawCircle(item)
             }
             if (item.paintType === 3) {
-                drawBrokenLine(item)
+                drawBrokenLine({
+                    ...item,
+                    r: 3
+                })
             }
             if (item.paintType === 4) {
                 drawCircle({
@@ -547,13 +579,20 @@ $(canvas).on('mousedown', function (e) {
         } = checkCurrentPoint(shapes, currentPoint)
         if (checkInShapeBorderResult) {
             selectedShape = checkInShapeBorderResult
+            shapes = shapes.map(item => item.id === selectedShape.shapeId ? { ...item,
+                selected: true
+            } : item)
             isSizeChanging = true
         } else if (checkInShapeResult) {
             selectedShape = checkInShapeResult
+            shapes = shapes.map(item => item.id === selectedShape.shapeId ? { ...item,
+                selected: true
+            } : item)
             isPositionChanging = true
         } else {
             isDragging = true
         }
+        draw()
         temporaryData.push({
             x,
             y
@@ -569,7 +608,6 @@ $(canvas).on('mousedown', function (e) {
             w: 0,
             h: 0,
             color: currentStrokeStyle,
-            dashLine,
             paintType,
         })
     }
@@ -582,7 +620,6 @@ $(canvas).on('mousedown', function (e) {
             y,
             r: 0,
             color: currentStrokeStyle,
-            dashLine,
             paintType,
         })
     }
@@ -603,7 +640,6 @@ $(canvas).on('mousedown', function (e) {
             if (isPainting) {
                 let points = polygon.points
                 const sPoint = points[0]
-                const isStartPoint = !!(currentPoint.x === sPoint.x && currentPoint.y === sPoint.y) //是否与起始点坐标重叠
                 const distance = Math.sqrt(Math.pow(sPoint.x - currentPoint.x, 2) + Math.pow(sPoint.y - currentPoint.y, 2)) * scaleSize
                 if (points.length > 2 && distance < 30) {
                     polygon.isCompleted = true
@@ -626,7 +662,6 @@ $(canvas).on('mousedown', function (e) {
             x,
             y,
             color: currentStrokeStyle,
-            dashLine,
             paintType,
         })
         draw()
@@ -677,7 +712,6 @@ $(canvas).on('mousemove', function (e) {
         draw()
     } else if (paintType === 0) {
         let {
-            checkInShapeResult,
             checkInShapeBorderResult
         } = checkCurrentPoint(shapes, {
             x: sourceX + e.offsetX / scaleSize,
@@ -750,68 +784,64 @@ $(canvas).on('mousemove', function (e) {
             }
             let distanceX = (currentPoint.x - lastPoint.x) / scaleSize
             let distanceY = (currentPoint.y - lastPoint.y) / scaleSize
-            if (checkInShapeBorderResult) {
-                const {
-                    shapeId
-                } = checkInShapeBorderResult
-                console.log(checkInShapeBorderResult)
-                let sShape = shapes.filter(item => item.id === shapeId)[0]
-                if (sShape.paintType === 1) {
-                    const {
-                        l,
-                        r,
-                        u,
-                        d,
-                        shapeId
-                    } = checkInShapeBorderResult
-                    if (Math.abs(distanceX) < sShape.w) {
-                        if (l) {
-                            sShape.x = sShape.x + distanceX
-                            sShape.w = sShape.w - distanceX
-                        }
-                        if (r) {
-                            sShape.w = sShape.w + distanceX
-                        }
+            const {
+                shapeId,
+                l,
+                r,
+                u,
+                d,
+                ul,
+                ur,
+                dl,
+                dr
+            } = selectedShape
+            let sShape = shapes.filter(item => item.id === shapeId)[0]
+            if (sShape.paintType === 1) {
+                if (Math.abs(distanceX) < sShape.w) {
+                    if (l || dl || ul) {
+                        sShape.x = sShape.x + distanceX
+                        sShape.w = sShape.w - distanceX
+                    } else if (r || dr || ur) {
+                        sShape.w = sShape.w + distanceX
                     }
-                    if (Math.abs(distanceY) < sShape.h) {
-                        if (u) {
-                            sShape.y = sShape.y + distanceY
-                            sShape.h = sShape.h - distanceY
-                        }
-                        if (d) {
-                            sShape.h = sShape.h + distanceY
-                        }
-                    }
-                } else if (sShape.paintType === 2) {
-                    const {
-                        shapeId
-                    } = checkInShapeBorderResult
-                    // debugger
-                    const distance1 = Math.sqrt(Math.pow(sourceX + (currentPoint.x / scaleSize) - sShape.x, 2) + Math.pow(sourceY + (currentPoint.y / scaleSize) - sShape.y, 2))
-                    const distance2 = Math.sqrt(Math.pow(sourceX + (lastPoint.x / scaleSize) - sShape.x, 2) + Math.pow(sourceY + (lastPoint.y / scaleSize) - sShape.y, 2))
-                    sShape.r = sShape.r + distance1 - distance2
+                } else {
+                    isSizeChanging = false
+                    canvas.style.cursor = 'auto'
                 }
-                shapes = shapes.map(item => item.id === sShape.id ? sShape : item)
-                draw()
-                temporaryData.push({
-                    x: e.offsetX,
-                    y: e.offsetY
-                })
+                if (Math.abs(distanceY) < sShape.h) {
+                    if (u || ul || ur) {
+                        sShape.y = sShape.y + distanceY
+                        sShape.h = sShape.h - distanceY
+                    } else if (d || dl || dr) {
+                        sShape.h = sShape.h + distanceY
+                    }
+                } else {
+                    isSizeChanging = false
+                    canvas.style.cursor = 'auto'
+                }
+            } else if (sShape.paintType === 2) {
+                const distance1 = Math.sqrt(Math.pow(sourceX + (currentPoint.x / scaleSize) - sShape.x, 2) + Math.pow(sourceY + (currentPoint.y / scaleSize) - sShape.y, 2))
+                const distance2 = Math.sqrt(Math.pow(sourceX + (lastPoint.x / scaleSize) - sShape.x, 2) + Math.pow(sourceY + (lastPoint.y / scaleSize) - sShape.y, 2))
+                sShape.r = sShape.r + distance1 - distance2
             }
+            shapes = shapes.map(item => item.id === sShape.id ? sShape : item)
+            draw()
+            temporaryData.push({
+                x: e.offsetX,
+                y: e.offsetY
+            })
         }
     }
 })
 
 //鼠标弹起事件
 $(canvas).on('mouseup', function (e) {
-    isPositionChanging = false
-    isSizeChanging = false
     if (paintType !== 3) {
         let cPoint = {
             x: e.offsetX,
             y: e.offsetY
         }
-        console.log(cPoint, startPoint)
+        // console.log(cPoint, startPoint)
         if ((paintType === 1 || paintType === 2) && isPainting && (cPoint.x === startPoint.x && cPoint.y === startPoint.y)) {
             shapes.pop()
             console.log(shapes)
@@ -821,7 +851,6 @@ $(canvas).on('mouseup', function (e) {
         if (paintType != 0) {
             temporaryData = []
         }
-        selectedShape = null
     } else {
         const lastShape = shapes[shapes.length - 1]
         if (isPainting && !lastShape.isCompleted) {
@@ -831,6 +860,14 @@ $(canvas).on('mouseup', function (e) {
             })
         }
     }
+    isPositionChanging = false
+    isSizeChanging = false
+    selectedShape = null
+    shapes = shapes.map(item => ({ ...item,
+        selected: false
+    }))
+    draw()
+
 })
 
 //鼠标离开区域事件
@@ -841,7 +878,7 @@ $(canvas).on('mouseout', function (e) {
     }
     isDragging = false
     isPositionChanging = false
-    temporaryData = []
+    // temporaryData = []
 })
 
 $(document).on('keydown', function (e) {
