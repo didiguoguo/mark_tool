@@ -62,6 +62,60 @@ function checkIntersect(points, point) {
 
 }
 
+// 动态设置鼠标样式
+function checkCurrentPoint(points, cPoint) {
+    let checkInShapeResult = false
+    let checkInShapeBorderResult = false
+    for (let i = points.length - 1; i >= 0; i--) {
+        if (checkInShapeBorder(points[i], cPoint)) {
+            checkInShapeBorderResult = checkInShapeBorder(points[i], cPoint)
+            break
+        }
+        if (checkInShape(points[i], cPoint)) {
+            checkInShapeResult = checkInShape(points[i], cPoint)
+            break
+        }
+    }
+    if (checkInShapeBorderResult) {
+        const {
+            l,
+            r,
+            u,
+            d,
+            aroundBorder,
+        } = checkInShapeBorderResult
+        if (l && u) {
+            canvas.style.cursor = 'nw-resize'
+        }
+        if (l && d) {
+            canvas.style.cursor = 'ne-resize'
+        }
+        if (r && u) {
+            canvas.style.cursor = 'nesw-resize'
+        }
+        if (r && d) {
+            canvas.style.cursor = 'nwse-resize'
+        }
+        if ((l || r) && !u && !d) {
+            canvas.style.cursor = 'e-resize'
+        }
+        if ((u || d) && !l && !r) {
+            canvas.style.cursor = 'n-resize'
+        }
+        if (aroundBorder) {
+            canvas.style.cursor = 'all-scroll'
+        }
+    } else if (checkInShapeResult) {
+        canvas.style.cursor = 'all-scroll'
+    } else {
+        canvas.style.cursor = 'auto'
+    }
+    return {
+        checkInShapeResult,
+        checkInShapeBorderResult
+    }
+}
+
 // 检查当前点是否在形状内
 function checkInShape(shape, point) {
     let distance
@@ -97,11 +151,63 @@ function checkInShape(shape, point) {
     }
     if (shape.paintType === 4) {
         distance = Math.sqrt(Math.pow(shape.x - point.x, 2) + Math.pow(shape.y - point.y, 2))
-        if (distance * scaleSize <= 20) {
+        if (distance * scaleSize <= 10) {
             return {
                 paintType: shape.paintType,
                 shapeId: shape.id,
             }
+        }
+    }
+}
+
+// 检查是否在图形边缘
+function checkInShapeBorder(shape, point) {
+    let x1 = shape.x
+    let x2 = point.x
+    let y1 = shape.y
+    let y2 = point.y
+    let w = shape.w
+    let h = shape.h
+    if (shape.paintType === 1) {
+        let l = false
+        let r = false
+        let u = false
+        let d = false
+        if (-10 / scaleSize < x2 - x1 && x2 - x1 <= 10 / scaleSize) {
+            l = true
+        }
+        if (-10 / scaleSize < x2 - x1 - w && x2 - x1 - w <= 10 / scaleSize) {
+            r = true
+        }
+        if (-10 / scaleSize < y2 - y1 && y2 - y1 <= 10 / scaleSize) {
+            u = true
+        }
+        if (-10 / scaleSize < y2 - y1 - h && y2 - y1 - h <= 10 / scaleSize) {
+            d = true
+        }
+        if (l || r || u || d) {
+            return {
+                shapeId: shape.id,
+                u,
+                l,
+                d,
+                r,
+                paintType: shape.paintType,
+            }
+        } else {
+            return false
+        }
+    }
+    if (shape.paintType === 2) {
+        const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
+        if (-10 / scaleSize <= shape.r - distance && shape.r - distance <= 10) {
+            return {
+                shapeId: shape.id,
+                paintType: shape.paintType,
+                aroundBorder: true
+            }
+        } else {
+            return false
         }
     }
 }
@@ -391,7 +497,7 @@ function drawOwnImage() {
 
 //绘制所有图形
 function drawShapes() {
-    // console.log(shapes, paintType)
+    console.log(shapes, paintType)
     if (shapes.length > 0) {
         shapes.forEach(function (item, index) {
             if (item.paintType === 1) {
@@ -435,18 +541,18 @@ $(canvas).on('mousedown', function (e) {
 
     //操作模式
     if (paintType === 0) {
-        for (let i = shapes.length - 1; i >= 0; i--) {
-            const checkResult = checkInShape(shapes[i], currentPoint)
-            if (checkResult) {
-                selectedShape = checkResult
-                console.log(checkResult)
-                break
-            }
-        }
-        if (!selectedShape) {
-            isDragging = true
-        } else {
+        let {
+            checkInShapeResult,
+            checkInShapeBorderResult
+        } = checkCurrentPoint(shapes, currentPoint)
+        if (checkInShapeBorderResult) {
+            selectedShape = checkInShapeBorderResult
+            isSizeChanging = true
+        } else if (checkInShapeResult) {
+            selectedShape = checkInShapeResult
             isPositionChanging = true
+        } else {
+            isDragging = true
         }
         temporaryData.push({
             x,
@@ -569,11 +675,19 @@ $(canvas).on('mousemove', function (e) {
             }
         }
         draw()
-    }
-    if (paintType === 0) {
-        if (isDragging && !selectedShape) {
-            sourceX = sourceX - (e.offsetX - temporaryData[temporaryData.length - 1].x) / scaleSize
-            sourceY = sourceY - (e.offsetY - temporaryData[temporaryData.length - 1].y) / scaleSize
+    } else if (paintType === 0) {
+        let {
+            checkInShapeResult,
+            checkInShapeBorderResult
+        } = checkCurrentPoint(shapes, {
+            x: sourceX + e.offsetX / scaleSize,
+            y: sourceY + e.offsetY / scaleSize
+        })
+        if (isDragging && !selectedShape) { //拖动整体
+            let distanceX = (e.offsetX - temporaryData[temporaryData.length - 1].x) / scaleSize
+            let distanceY = (e.offsetY - temporaryData[temporaryData.length - 1].y) / scaleSize
+            sourceX = sourceX - distanceX
+            sourceY = sourceY - distanceY
 
             // 临界点控制
             if (sourceX < 0) {
@@ -593,10 +707,11 @@ $(canvas).on('mousemove', function (e) {
                 x: e.offsetX,
                 y: e.offsetY
             })
-        } else if (isPositionChanging) {
+        } else if (isPositionChanging) { //拖动图形
             let distanceX = (e.offsetX - temporaryData[temporaryData.length - 1].x) / scaleSize
             let distanceY = (e.offsetY - temporaryData[temporaryData.length - 1].y) / scaleSize
-            shapes.forEach((item, index) => {
+            for (let index = 0; index < shapes.length; index++) {
+                let item = shapes[index]
                 if (item.id === selectedShape.shapeId) {
                     if (selectedShape.paintType !== 3) {
                         shapes[index] = {
@@ -605,29 +720,91 @@ $(canvas).on('mousemove', function (e) {
                             y: item.y + distanceY,
                         }
                     } else {
-                        item.points.forEach((p, i) => {
+                        for (let i = 0; i < item.points.length; i++) {
+                            let p = item.points[i]
                             if (i === selectedShape.pointId) {
                                 shapes[index].points[i] = {
                                     x: p.x + distanceX,
                                     y: p.y + distanceY,
                                 }
+                                break
                             }
-                        })
+                        }
                     }
+                    break
                 }
-            })
+            }
             draw()
             temporaryData.push({
                 x: e.offsetX,
                 y: e.offsetY
             })
+        } else if (isSizeChanging) { //改变形状大小
+            const currentPoint = { //鼠标当前位置
+                x: e.offsetX,
+                y: e.offsetY
+            }
+            const lastPoint = { //鼠标上一个位置
+                x: temporaryData[temporaryData.length - 1].x,
+                y: temporaryData[temporaryData.length - 1].y
+            }
+            let distanceX = (currentPoint.x - lastPoint.x) / scaleSize
+            let distanceY = (currentPoint.y - lastPoint.y) / scaleSize
+            if (checkInShapeBorderResult) {
+                const {
+                    shapeId
+                } = checkInShapeBorderResult
+                console.log(checkInShapeBorderResult)
+                let sShape = shapes.filter(item => item.id === shapeId)[0]
+                if (sShape.paintType === 1) {
+                    const {
+                        l,
+                        r,
+                        u,
+                        d,
+                        shapeId
+                    } = checkInShapeBorderResult
+                    if (Math.abs(distanceX) < sShape.w) {
+                        if (l) {
+                            sShape.x = sShape.x + distanceX
+                            sShape.w = sShape.w - distanceX
+                        }
+                        if (r) {
+                            sShape.w = sShape.w + distanceX
+                        }
+                    }
+                    if (Math.abs(distanceY) < sShape.h) {
+                        if (u) {
+                            sShape.y = sShape.y + distanceY
+                            sShape.h = sShape.h - distanceY
+                        }
+                        if (d) {
+                            sShape.h = sShape.h + distanceY
+                        }
+                    }
+                } else if (sShape.paintType === 2) {
+                    const {
+                        shapeId
+                    } = checkInShapeBorderResult
+                    // debugger
+                    const distance1 = Math.sqrt(Math.pow(sourceX + (currentPoint.x / scaleSize) - sShape.x, 2) + Math.pow(sourceY + (currentPoint.y / scaleSize) - sShape.y, 2))
+                    const distance2 = Math.sqrt(Math.pow(sourceX + (lastPoint.x / scaleSize) - sShape.x, 2) + Math.pow(sourceY + (lastPoint.y / scaleSize) - sShape.y, 2))
+                    sShape.r = sShape.r + distance1 - distance2
+                }
+                shapes = shapes.map(item => item.id === sShape.id ? sShape : item)
+                draw()
+                temporaryData.push({
+                    x: e.offsetX,
+                    y: e.offsetY
+                })
+            }
         }
     }
 })
 
 //鼠标弹起事件
 $(canvas).on('mouseup', function (e) {
-    isPositionChanging =false
+    isPositionChanging = false
     isSizeChanging = false
     if (paintType !== 3) {
         let cPoint = {
@@ -641,7 +818,9 @@ $(canvas).on('mouseup', function (e) {
         }
         isPainting = false
         isDragging = false
-        temporaryData = []
+        if (paintType != 0) {
+            temporaryData = []
+        }
         selectedShape = null
     } else {
         const lastShape = shapes[shapes.length - 1]
