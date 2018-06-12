@@ -1,17 +1,18 @@
 .work_area {
     margin: 0 auto;
     text-align: center;
+    height: 100vh;
 }
 
-.tools {
+.mark_tools {
     margin: 0 auto;
     text-align: center;
     line-height: 2em;
-    padding:5px 0;
+    padding: 5px 0;
 }
 
 button {
-    vertical-align: bottom!important;
+    vertical-align: bottom !important;
 }
 
 #canvas {

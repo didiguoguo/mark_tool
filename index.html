@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 
 <head>
@@ -8,38 +9,62 @@
 </head>
 
 <body style="margin:0">
-    <div class="work_area">
+    <div class="work_area" id="canvasContainer">
         <canvas id='canvas'>您的版本浏览器版本过低，不支持canvas绘图，请升级您的浏览器！</canvas>
-    </div>
-    <div class="tools">
-        <button class="btn btn-sm btn-danger" onclick="reset()"><span class="btn-text">重置</span></button>
-        <button class="btn btn-sm" onclick="toggleToAction()"><span class="btn-text">操作</span></button>
-        <select onchange="onColorChange(this.value)">
-            <option value="#000">黑色</option>
-            <option value="#fff">白色</option>
-            <option value="#00f">蓝色</option>
-            <option value="#f00">红色</option>
-            <option value="#0f0">黄色</option>
-        </select>
-        <!-- <select onchange="toggleToDashLine(this.value)">
-            <option value="0">实线</option>
-            <option value="1">虚线</option>
-        </select> -->
-        <button class="btn btn-sm" onclick="toggleToRect()" title="Q"><span class="btn-text">矩形</span></button>
-        <button class="btn btn-sm" onclick="toggleToCircle()" title="W"><span class="btn-text">圆圈</span></button>
-        <button class="btn btn-sm" onclick="toggleToBrokenLine()" title="E"><span class="btn-text">折线</span></button>
-        <button class="btn btn-sm" onclick="toggleToPoint()" title="R"><span class="btn-text">点</span></button>
-        <button class="btn btn-sm" onclick="enlarge()"><i class="iconfont">&#xe6db;</i></button>
-        <button class="btn btn-sm" onclick="narrow()"><i class="iconfont">&#xe6c7;</i></button>
+        <div class="mark_tools">
+            <button class="btn btn-sm btn-danger reset_tool">
+                <span class="btn-text">重置</span>
+            </button>
+            <button class="btn btn-sm action_tool">
+                <span class="btn-text">操作</span>
+            </button>
+            <select class="color_tool">
+                <option value="#000">黑色</option>
+                <option value="#fff">白色</option>
+                <option value="#00f">蓝色</option>
+                <option value="#f00">红色</option>
+                <option value="#0f0">黄色</option>
+            </select>
+            <!-- <select onchange="toggleToDashLine(this.value)">
+                <option value="0">实线</option>
+                <option value="1">虚线</option>
+            </select> -->
+            <button class="btn btn-sm rect_tool" title="Q">
+                <span class="btn-text">矩形</span>
+            </button>
+            <button class="btn btn-sm circle_tool" title="W">
+                <span class="btn-text">圆圈</span>
+            </button>
+            <button class="btn btn-sm polygon_tool" title="E">
+                <span class="btn-text">折线</span>
+            </button>
+            <button class="btn btn-sm point_tool" title="R">
+                <span class="btn-text">点</span>
+            </button>
+            <button class="btn btn-sm enlarge_tool">
+                <i class="iconfont">&#xe6db;</i>
+            </button>
+            <button class="btn btn-sm narrow_tool">
+                <i class="iconfont">&#xe6c7;</i>
+            </button>
 
-        <button class="btn btn-sm" onclick="moveLeft()"><i class="iconfont">&#xe639;</i></button>
-        <button class="btn btn-sm" onclick="moveRight()"><i class="iconfont">&#xe63a;</i></button>
-        <button class="btn btn-sm" onclick="moveUp()"><i class="iconfont">&#xe63c;</i></button>
-        <button class="btn btn-sm" onclick="moveDown()"><i class="iconfont">&#xe638;</i></button>
-        
+            <button class="btn btn-sm move_left_tool">
+                <i class="iconfont">&#xe639;</i>
+            </button>
+            <button class="btn btn-sm move_right_tool">
+                <i class="iconfont">&#xe63a;</i>
+            </button>
+            <button class="btn btn-sm move_up_tool">
+                <i class="iconfont">&#xe63c;</i>
+            </button>
+            <button class="btn btn-sm move_down_tool">
+                <i class="iconfont">&#xe638;</i>
+            </button>
+
+        </div>
     </div>
     <script src="./lodash.js"></script>
-    <script src="./myeditor.js"></script>
+    <script  type="module" src="./index.js"></script>
 </body>
 
 </html>

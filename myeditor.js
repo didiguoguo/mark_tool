@@ -31,7 +31,7 @@ let sourceY = 0 //canvas 绘制图像时取原图像像素点位置的Y坐标
 let temporaryData = [] //拖拽临时数据
 
 let img = new Image()
-img.src = './scenery.jpg'
+img.src = './test.png'
 img.onload = function () {
     let w = this.width
     let h = this.height
@@ -301,9 +301,11 @@ function toggleToBrokenLine() {
 //切换点
 function toggleToPoint() {
     isPainting = false
+    shapes = filterUncompletedPolygon(shapes)
     paintType = 4
     canvas.style.cursor = 'crosshair'
 }
+
 
 // //切换虚线
 // function toggleToDashLine(v) {
@@ -923,4 +925,8 @@ $(document).on('keydown', function (e) {
             narrow()
             break
     }
+})
+
+$(document).on('touchMove',function(e){
+    e.preventDefault()
 })
