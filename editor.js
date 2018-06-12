@@ -690,7 +690,8 @@ export default class Editor {
     }
 
     //切换颜色
-    onColorChange(v) {
+    onColorChange(e) {
+        const v= e.target.value
         this.isPainting = false
         this.filterUncompletedPolygon()
         this.currentStrokeStyle = v
